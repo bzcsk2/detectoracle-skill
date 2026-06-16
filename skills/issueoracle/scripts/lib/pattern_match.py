@@ -64,40 +64,61 @@ def _metadata_recall(pattern: schema.Pattern, profile: schema.RepoProfile) -> bo
 def _match_signals(
     bad_signals: list[schema.TypedSignal | str], chunk: schema.CodeChunk
 ) -> tuple[list[str], bool, float]:
-    hits: list[str] = []
-    suppressed = False
-    score_bonus = 0.0
     chunk_text = chunk.code_excerpt.lower()
     chunk_signals = [s.lower() for s in chunk.signals]
 
-    for signal in bad_signals:
-        if isinstance(signal, str):
-            sig_lower = signal.lower()
-            if sig_lower in chunk_text or sig_lower in chunk_signals:
-                hits.append(signal)
-        elif isinstance(signal, schema.TypedSignal):
-            sig_lower = signal.value.lower() if signal.value else ""
+    typed_signals = [s for s in bad_signals if isinstance(s, schema.TypedSignal)]
+    legacy_signals = [s for s in bad_signals if isinstance(s, str)]
 
-            if signal.kind == "required":
-                if sig_lower in chunk_text or sig_lower in chunk_signals:
-                    hits.append(signal.value or str(signal.values))
-            elif signal.kind == "required_any":
-                values = signal.values or [signal.value]
-                matched = [v for v in values if v.lower() in chunk_text or v.lower() in chunk_signals]
-                if matched:
-                    hits.extend(matched)
-            elif signal.kind == "negative":
-                if sig_lower in chunk_text or sig_lower in chunk_signals:
-                    score_bonus -= 0.15
-            elif signal.kind == "suppress_if_present":
-                if sig_lower in chunk_text or sig_lower in chunk_signals:
-                    suppressed = True
-            elif signal.kind == "optional":
-                if sig_lower in chunk_text or sig_lower in chunk_signals:
-                    score_bonus += 0.1
-                    hits.append(signal.value)
+    if not typed_signals:
+        hits = [s for s in legacy_signals if _contains(s, chunk_text, chunk_signals)]
+        return hits, False, 0.0
 
-    return hits, suppressed, score_bonus
+    hits: list[str] = []
+    suppressed = False
+    score_bonus = 0.0
+
+    for signal in typed_signals:
+        values = _signal_values(signal)
+        matched = [value for value in values if _contains(value, chunk_text, chunk_signals)]
+
+        if signal.kind == "required":
+            if not matched:
+                return [], suppressed, score_bonus
+            hits.extend(matched)
+        elif signal.kind == "required_any":
+            if not matched:
+                return [], suppressed, score_bonus
+            hits.extend(matched)
+        elif signal.kind == "negative":
+            if matched:
+                score_bonus -= 0.15
+        elif signal.kind == "suppress_if_present":
+            if matched:
+                suppressed = True
+        elif signal.kind == "optional":
+            if matched:
+                score_bonus += 0.1
+                hits.extend(matched)
+
+    # Keep legacy string signals as optional compatibility hints once typed gates pass.
+    for signal in legacy_signals:
+        if _contains(signal, chunk_text, chunk_signals):
+            hits.append(signal)
+
+    return list(dict.fromkeys(hits)), suppressed, score_bonus
+
+
+def _signal_values(signal: schema.TypedSignal) -> list[str]:
+    values = list(signal.values or [])
+    if signal.value:
+        values.append(signal.value)
+    return [v for v in values if v]
+
+
+def _contains(value: str, chunk_text: str, chunk_signals: list[str]) -> bool:
+    value_lower = value.lower()
+    return value_lower in chunk_text or value_lower in chunk_signals
 
 
 def _trigger_coverage(triggers: list[schema.TriggerCondition], chunk: schema.CodeChunk) -> float:
