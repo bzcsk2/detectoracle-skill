@@ -79,12 +79,10 @@ patterns:
           - "add_middleware"
           - "CORS"
     bad_code_signals:
-      - kind: required
-        value: "allow_origins"
       - kind: required_any
         values:
-          - "'*'"
-          - '"*"'
+          - 'allow_origins=["*"]'
+          - "allow_origins=['*']"
       - kind: required
         value: "allow_credentials=True"
       - kind: suppress_if_present
