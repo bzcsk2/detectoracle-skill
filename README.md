@@ -1,3 +1,5 @@
+[English](README.md) | [中文](README.zh.md)
+
 # IssueOracle Skill
 
 Mine bug patterns from fixed GitHub issues, then review local code with concrete evidence.
