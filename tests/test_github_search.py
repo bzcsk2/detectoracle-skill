@@ -56,7 +56,7 @@ class GithubSearchTests(unittest.TestCase):
                 },
             ]
         }
-        repos = github_search.search_similar_repos("Python", ["fastapi"], token="test-token", max_results=2)
+        repos = github_search.search_similar_repos("Python", ["fastapi", "web-framework"], token="test-token", max_results=2)
         self.assertEqual(len(repos), 2)
         self.assertEqual(repos[0].owner_repo, "fastapi/fastapi")
         self.assertEqual(repos[0].stars, 75000)

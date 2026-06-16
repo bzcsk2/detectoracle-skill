@@ -35,9 +35,9 @@ class ClassifyProjectTypeTests(unittest.TestCase):
         prof = schema.RepoProfile(repo_path="/tmp", languages=["Python"], frameworks=[], dependencies=["requests"])
         self.assertEqual(profile.classify_project_type(prof), "library")
 
-    def test_web_fallback_via_risk_surface(self):
-        prof = schema.RepoProfile(repo_path="/tmp", languages=["Python"], frameworks=[], dependencies=[], risk_surfaces=["web"])
-        self.assertEqual(profile.classify_project_type(prof), "web_api")
+    def test_library_default(self):
+        prof = schema.RepoProfile(repo_path="/tmp", languages=["Rust"], frameworks=[], dependencies=[])
+        self.assertEqual(profile.classify_project_type(prof), "library")
 
 
 class InferSearchTopicsTests(unittest.TestCase):
@@ -48,14 +48,20 @@ class InferSearchTopicsTests(unittest.TestCase):
         self.assertTrue(len(topics) <= 5)
 
     def test_click_cli_topics(self):
-        prof = schema.RepoProfile(repo_path="/tmp", languages=["Python"], frameworks=[], dependencies=["click"])
+        prof = schema.RepoProfile(repo_path="/tmp", languages=["Python"], frameworks=["click"])
         topics = profile.infer_search_topics(prof)
         self.assertIn("cli", topics)
 
-    def test_fallback_to_language(self):
+    def test_fallback_to_project_type(self):
         prof = schema.RepoProfile(repo_path="/tmp", languages=["Rust"], frameworks=[], dependencies=[])
         topics = profile.infer_search_topics(prof)
-        self.assertIn("rust", topics)
+        self.assertIn("library", topics)
+        self.assertNotIn("rust", topics)  # language names excluded from topics
+
+    def test_pydantic_topics(self):
+        prof = schema.RepoProfile(repo_path="/tmp", languages=["Python"], frameworks=["pydantic"])
+        topics = profile.infer_search_topics(prof)
+        self.assertIn("pydantic", topics)
 
 
 class ProfileTests(unittest.TestCase):

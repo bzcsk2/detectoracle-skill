@@ -166,23 +166,39 @@ def classify_project_type(profile: schema.RepoProfile) -> str:
         return "cli"
     if any(k in all_kw for k in ("react", "vue", "angular", "svelte")):
         return "frontend"
-    if profile.risk_surfaces and "web" in profile.risk_surfaces:
-        return "web_api"
+    if any(k in all_kw for k in ("pytest", "unittest", "mypy", "ruff", "black", "flake8")):
+        return "library"
     return "library"
 
 
 _TOPIC_MAP: dict[str, list[str]] = {
-    "fastapi": ["fastapi", "web-framework", "rest-api"],
-    "flask": ["flask", "web-framework", "rest-api"],
-    "django": ["django", "web-framework", "rest-api"],
-    "express": ["express", "web-framework", "rest-api"],
-    "nextjs": ["nextjs", "react", "web-framework"],
-    "react": ["react", "frontend", "ui"],
-    "vue": ["vue", "frontend", "ui"],
-    "sqlalchemy": ["sqlalchemy", "orm", "database"],
-    "click": ["cli", "python"],
-    "typer": ["cli", "python"],
+    "fastapi": ["fastapi"],
+    "flask": ["flask"],
+    "django": ["django"],
+    "express": ["express"],
+    "nextjs": ["nextjs"],
+    "react": ["react"],
+    "vue": ["vue"],
+    "sqlalchemy": ["sqlalchemy"],
+    "pydantic": ["pydantic"],
+    "click": ["cli"],
+    "typer": ["cli"],
+    "pytest": ["testing"],
+    "ruff": ["linter"],
+    "numpy": ["numpy"],
+    "pandas": ["pandas"],
+    "requests": ["requests"],
 }
+
+_PROJECT_TYPE_TOPICS: dict[str, list[str]] = {
+    "web_api": ["web-api", "rest-api"],
+    "cli": ["cli"],
+    "frontend": ["frontend"],
+    "library": ["library"],
+}
+
+
+_LANGUAGE_NAMES = {"python", "typescript", "javascript", "rust", "go", "java", "ruby", "csharp", "cpp", "swift", "kotlin"}
 
 
 def infer_search_topics(profile: schema.RepoProfile) -> list[str]:
@@ -191,7 +207,13 @@ def infer_search_topics(profile: schema.RepoProfile) -> list[str]:
         name_lower = name.lower()
         if name_lower in _TOPIC_MAP:
             topics.extend(_TOPIC_MAP[name_lower])
+    # Only add project-type topics when we have no framework matches
     if not topics:
+        project_type = classify_project_type(profile)
+        topics.extend(_PROJECT_TYPE_TOPICS.get(project_type, []))
         primary_lang = profile.languages[0].lower() if profile.languages else "python"
-        topics.append(primary_lang)
-    return list(dict.fromkeys(topics))[:5]
+        if primary_lang not in _LANGUAGE_NAMES:
+            topics.append(primary_lang)
+    # Exclude language names — they are not valid GitHub topics
+    topics = [t for t in topics if t not in _LANGUAGE_NAMES]
+    return list(dict.fromkeys(topics))[:3]

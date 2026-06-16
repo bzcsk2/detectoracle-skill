@@ -62,7 +62,7 @@ def search_similar_repos(
     token: str | None = None, max_results: int = 5,
 ) -> list[schema.RepoCandidate]:
     q_parts = [f"language:{language}"]
-    q_parts += [f"topic:{t}" for t in topics[:3]]
+    q_parts += [f"topic:{t}" for t in topics[:1]]
     q_parts.append("stars:>100")
     q = " ".join(q_parts)
     data = _request("/search/repositories", token, {
