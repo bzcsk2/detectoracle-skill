@@ -20,6 +20,13 @@ def run_eval(fixtures_dir: Path, golden_dir: Path, packs_dir: Path, emit: str = 
     results = []
     passed = 0
     failed = 0
+    total_fixtures = 0
+    total_bad = 0
+    total_good = 0
+    pattern_recall_hits = 0
+    pattern_recall_total = 0
+    wrong_pattern_hit_count = 0
+    false_positive_count = 0
 
     for fixture_dir in sorted(fixtures_dir.iterdir()):
         if not fixture_dir.is_dir():
@@ -41,16 +48,78 @@ def run_eval(fixtures_dir: Path, golden_dir: Path, packs_dir: Path, emit: str = 
             if not variant_dir.exists():
                 continue
 
+            total_fixtures += 1
+            if variant == "bad":
+                total_bad += 1
+            else:
+                total_good += 1
+
             prof = profile.profile_repo(str(variant_dir))
             chunks = code_index.index_repo(str(variant_dir), prof)
             matches = pattern_match.match(chunks, eval_patterns, prof)
             findings, _ = review.build_findings(matches, "low", 20)
 
-            has_findings = len(findings) > 0
-            variant_key = f"{variant}_expected_findings"
-            expected = golden.get(variant_key, False)
+            expected = golden.get(variant, {})
+            exp_findings = expected.get("expected_findings", False)
+            must_include = expected.get("must_include_patterns", [])
+            must_not_include = expected.get("must_not_include_patterns", [])
+            must_include_files = expected.get("must_include_files", [])
+            min_confidence = expected.get("min_confidence", 0.0)
 
-            if has_findings == expected:
+            has_findings = len(findings) > 0
+            found_patterns = {f.matched_pattern for f in findings}
+            found_files = {f.file for f in findings}
+            max_conf = max((f.confidence for f in findings), default=0.0)
+
+            variant_ok = True
+            detail_errors = []
+
+            if has_findings != exp_findings:
+                variant_ok = False
+                detail_errors.append(
+                    f"expected_findings={exp_findings}, got={has_findings} ({len(findings)} findings)"
+                )
+
+            for pid in must_include:
+                pattern_recall_total += 1
+                if pid in found_patterns:
+                    pattern_recall_hits += 1
+                else:
+                    variant_ok = False
+                    detail_errors.append(f"must_include_pattern '{pid}' not found")
+
+            for pid in must_not_include:
+                if pid in found_patterns:
+                    variant_ok = False
+                    wrong_pattern_hit_count += 1
+                    detail_errors.append(f"must_not_include_pattern '{pid}' found (false positive)")
+
+            if has_findings:
+                for f in findings:
+                    if not f.file or not f.start_line:
+                        variant_ok = False
+                        detail_errors.append(
+                            f"finding missing file/line: pattern={f.matched_pattern}"
+                        )
+                    if not f.matched_pattern:
+                        variant_ok = False
+                        detail_errors.append("finding missing matched_pattern")
+
+            for fn in must_include_files:
+                if not any(fn in fp for fp in found_files):
+                    variant_ok = False
+                    detail_errors.append(f"must_include_file '{fn}' not found in findings")
+
+            if max_conf < min_confidence:
+                variant_ok = False
+                detail_errors.append(
+                    f"max_confidence={max_conf:.2f} < min_confidence={min_confidence}"
+                )
+
+            if has_findings and not exp_findings:
+                false_positive_count += 1
+
+            if variant_ok:
                 passed += 1
             else:
                 failed += 1
@@ -58,9 +127,9 @@ def run_eval(fixtures_dir: Path, golden_dir: Path, packs_dir: Path, emit: str = 
                     {
                         "fixture": fixture_name,
                         "variant": variant,
-                        "expected": expected,
-                        "actual": has_findings,
+                        "errors": detail_errors,
                         "findings": len(findings),
+                        "patterns": list(found_patterns),
                     }
                 )
 
@@ -68,6 +137,12 @@ def run_eval(fixtures_dir: Path, golden_dir: Path, packs_dir: Path, emit: str = 
         "total": passed + failed,
         "passed": passed,
         "failed": failed,
+        "fixtures_total": total_fixtures,
+        "positive_total": total_bad,
+        "negative_total": total_good,
+        "pattern_recall": f"{pattern_recall_hits}/{pattern_recall_total}",
+        "wrong_pattern_hit_count": wrong_pattern_hit_count,
+        "false_positive_count": false_positive_count,
         "details": results,
     }
 
@@ -75,10 +150,17 @@ def run_eval(fixtures_dir: Path, golden_dir: Path, packs_dir: Path, emit: str = 
         print(json.dumps(summary, indent=2))
     else:
         print(f"Eval Results: {passed}/{passed + failed} passed")
+        print(
+            f"  pattern_recall: {pattern_recall_hits}/{pattern_recall_total}"
+            f"  wrong_pattern_hits: {wrong_pattern_hit_count}"
+            f"  false_positives: {false_positive_count}"
+        )
         if failed:
             print(f"  {failed} failure(s):")
             for r in results:
-                print(f"    {r['fixture']}/{r['variant']}: exp={r['expected']}, got={r['actual']}")
+                print(f"    {r['fixture']}/{r['variant']}:")
+                for e in r["errors"]:
+                    print(f"      - {e}")
 
     return 0 if failed == 0 else 1
 

@@ -1,6 +1,6 @@
 ---
 name: issueoracle
-version: "0.2.0"
+version: "0.2.1"
 description: "Scan, mine, and review code using OSS bug patterns. Profile projects, batch-mine GitHub issues, and review local code with evidence."
 argument-hint: "issueoracle scan . | issueoracle mine owner/repo,... | issueoracle review . --experience <path>"
 allowed-tools: Bash, Read, Write, AskUserQuestion, WebSearch

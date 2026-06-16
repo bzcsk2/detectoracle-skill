@@ -27,6 +27,52 @@ class PackLoaderTests(unittest.TestCase):
         self.assertEqual(patterns, [])
         self.assertGreater(len(errors), 0)
 
+    def test_duplicate_pattern_id_detected(self):
+        yaml_content = """
+- id: dup-pattern
+  title: Duplicate
+  language: Python
+  bug_type: resource_leak
+  root_cause: dup
+  confidence: 0.7
+  evidence:
+    - repo: test/repo
+      url: https://github.com/test/repo/issues/1
+"""
+        (self.tmp / "a.yaml").write_text(yaml_content, encoding="utf-8")
+        (self.tmp / "b.yaml").write_text(yaml_content, encoding="utf-8")
+        patterns, errors = pack_loader.load_pack_dir(self.tmp)
+        self.assertEqual(len(patterns), 1)
+        dup_errors = [e for e in errors if "Duplicate pattern id" in str(e)]
+        self.assertEqual(len(dup_errors), 1)
+
+    def test_duplicate_in_same_file_allowed(self):
+        yaml_content = """
+- id: shared-pattern
+  title: First
+  language: Python
+  bug_type: resource_leak
+  root_cause: first
+  confidence: 0.7
+  evidence:
+    - repo: test/repo
+      url: https://github.com/test/repo/issues/1
+- id: shared-pattern
+  title: Second
+  language: Python
+  bug_type: resource_leak
+  root_cause: second
+  confidence: 0.7
+  evidence:
+    - repo: test/repo
+      url: https://github.com/test/repo/issues/2
+"""
+        (self.tmp / "dup.yaml").write_text(yaml_content, encoding="utf-8")
+        patterns, errors = pack_loader.load_pack_dir(self.tmp)
+        self.assertEqual(len(patterns), 1)
+        dup_errors = [e for e in errors if "Duplicate pattern id" in str(e)]
+        self.assertEqual(len(dup_errors), 1)
+
     def test_load_valid_pattern(self):
         yaml_content = """
 - id: test-pattern

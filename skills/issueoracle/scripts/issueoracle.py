@@ -33,6 +33,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 import store  # noqa: E402
 from lib import env, log, render, schema  # noqa: E402
 from lib import experience as experience_mod  # noqa: E402
+from lib.version import __version__  # noqa: E402
 
 
 def build_parser():
@@ -216,7 +217,7 @@ def cmd_review(args) -> int:
     if not patterns:
         logger.warning("No patterns loaded")
         report = {
-            "version": "0.1.0",
+            "version": __version__,
             "scope": {
                 "repo": str(repo_path),
                 "mode": "diff" if args.changed else "full",
@@ -254,7 +255,7 @@ def cmd_review(args) -> int:
         findings_list, suppressed = review.build_findings(matches, str(threshold), int(max_f))
 
         report = {
-            "version": "0.1.0",
+            "version": __version__,
             "scope": {
                 "repo": str(repo_path),
                 "mode": "diff" if args.changed else "full",

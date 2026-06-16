@@ -1,0 +1,4 @@
+"""IssueOracle version metadata."""
+
+__version__ = "0.2.1"
+USER_AGENT = f"issueoracle-skill/{__version__}"

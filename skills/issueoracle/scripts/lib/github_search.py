@@ -6,6 +6,7 @@ import urllib.request
 from typing import Any
 
 from lib import safety, schema
+from lib.version import USER_AGENT
 
 GITHUB_API = "https://api.github.com"
 
@@ -14,7 +15,7 @@ def _headers(token: str | None) -> dict[str, str]:
     h = {
         "Accept": "application/vnd.github+json",
         "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "issueoracle-skill/0.1.0",
+        "User-Agent": USER_AGENT,
     }
     if token:
         h["Authorization"] = f"Bearer {token}"
