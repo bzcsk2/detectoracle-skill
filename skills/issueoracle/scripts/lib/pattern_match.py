@@ -12,6 +12,7 @@ class MatchResult:
     signal_hits: list[str]
     trigger_coverage: float
     score: float
+    suppressed: bool = False
 
 
 def match(
@@ -24,18 +25,19 @@ def match(
         if not _metadata_recall(pattern, profile):
             continue
         for chunk in chunks:
-            signal_hits = _match_signals(pattern.bad_code_signals, chunk)
+            signal_hits, suppress, score_bonus = _match_signals(pattern.bad_code_signals, chunk)
             if not signal_hits:
                 continue
             trigger_cov = _trigger_coverage(pattern.trigger_conditions, chunk)
             if trigger_cov == 0.0:
                 continue
-            score = _score(pattern, signal_hits, trigger_cov)
+            score = _score(pattern, signal_hits, trigger_cov) + score_bonus
             results.append(
                 MatchResult(
                     pattern=pattern,
                     chunk=chunk,
                     signal_hits=signal_hits,
+                    suppressed=suppress,
                     trigger_coverage=trigger_cov,
                     score=score,
                 )
@@ -59,15 +61,43 @@ def _metadata_recall(pattern: schema.Pattern, profile: schema.RepoProfile) -> bo
     return any(f.lower() in [pf.lower() for pf in profile.frameworks] for f in pattern.frameworks)
 
 
-def _match_signals(bad_signals: list[str], chunk: schema.CodeChunk) -> list[str]:
+def _match_signals(
+    bad_signals: list[schema.TypedSignal | str], chunk: schema.CodeChunk
+) -> tuple[list[str], bool, float]:
     hits: list[str] = []
+    suppressed = False
+    score_bonus = 0.0
     chunk_text = chunk.code_excerpt.lower()
     chunk_signals = [s.lower() for s in chunk.signals]
+
     for signal in bad_signals:
-        sig_lower = signal.lower()
-        if sig_lower in chunk_text or sig_lower in chunk_signals:
-            hits.append(signal)
-    return hits
+        if isinstance(signal, str):
+            sig_lower = signal.lower()
+            if sig_lower in chunk_text or sig_lower in chunk_signals:
+                hits.append(signal)
+        elif isinstance(signal, schema.TypedSignal):
+            sig_lower = signal.value.lower() if signal.value else ""
+
+            if signal.kind == "required":
+                if sig_lower in chunk_text or sig_lower in chunk_signals:
+                    hits.append(signal.value or str(signal.values))
+            elif signal.kind == "required_any":
+                values = signal.values or [signal.value]
+                matched = [v for v in values if v.lower() in chunk_text or v.lower() in chunk_signals]
+                if matched:
+                    hits.extend(matched)
+            elif signal.kind == "negative":
+                if sig_lower in chunk_text or sig_lower in chunk_signals:
+                    score_bonus -= 0.15
+            elif signal.kind == "suppress_if_present":
+                if sig_lower in chunk_text or sig_lower in chunk_signals:
+                    suppressed = True
+            elif signal.kind == "optional":
+                if sig_lower in chunk_text or sig_lower in chunk_signals:
+                    score_bonus += 0.1
+                    hits.append(signal.value)
+
+    return hits, suppressed, score_bonus
 
 
 def _trigger_coverage(triggers: list[schema.TriggerCondition], chunk: schema.CodeChunk) -> float:

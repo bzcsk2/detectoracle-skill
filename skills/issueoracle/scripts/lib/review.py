@@ -19,6 +19,8 @@ def build_findings(
     for m in matches:
         if m.score < threshold_val:
             continue
+        if m.suppressed:
+            continue
         f = _to_finding(m)
         if not f.file or not f.matched_pattern or not f.trigger_condition:
             suppressed.append(f)
