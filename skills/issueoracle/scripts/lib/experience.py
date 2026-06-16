@@ -90,27 +90,19 @@ def load_as_patterns(
             return [], [f"Path not found: {p}"]
         return [], []
 
-    resolved_path: Path | None = None
     data: dict[str, Any] = {}
 
     if p.suffix == ".json":
-        resolved_path = p
         data = json.loads(p.read_text(encoding="utf-8"))
     elif p.suffix == ".md":
         json_candidate = p.parent / "experience.json"
         if json_candidate.exists():
-            resolved_path = json_candidate
             data = json.loads(json_candidate.read_text(encoding="utf-8"))
             warnings.append(f"Loaded JSON alongside markdown: {json_candidate}")
         else:
             patterns = _parse_markdown_experience(p)
             warnings.append("Parsed markdown experience (degraded, all patterns set to candidate)")
-            candidate_patterns = []
-            for pat in patterns:
-                if pat.id.startswith("exp-"):
-                    pass
-                candidate_patterns.append(pat)
-            return candidate_patterns, warnings
+            return patterns, warnings
     else:
         return [], [f"Unsupported experience file format: {p.suffix}"]
 
@@ -184,7 +176,6 @@ def _parse_markdown_experience(path: Path) -> list[schema.Pattern]:
                 elif key == "evidence":
                     for part in val.split(","):
                         part = part.strip()
-                        # strip markdown link: [repo#n](url) -> repo#n
                         link_m = re.match(r"\[(.+?)\]\(.+?\)", part)
                         if link_m:
                             part = link_m.group(1)
@@ -195,7 +186,6 @@ def _parse_markdown_experience(path: Path) -> list[schema.Pattern]:
                                     repo=f"{m2.group(1)}/{m2.group(2)}",
                                     issue=int(m2.group(3)),
                                     url=f"https://github.com/{m2.group(1)}/{m2.group(2)}/issues/{m2.group(3)}",
-                                    pr_url="",
                                 )
                             )
                 else:
