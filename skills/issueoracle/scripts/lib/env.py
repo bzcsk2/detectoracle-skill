@@ -53,9 +53,7 @@ def is_first_run() -> bool:
 def mark_setup_complete() -> None:
     NUX_ENV_DIR.mkdir(parents=True, exist_ok=True)
     content = (
-        "SETUP_COMPLETE=true\n"
-        "DETECTORACLE_HOME=~/.detectoracle\n"
-        "DETECTORACLE_ALLOW_REMOTE_LLM=0\n"
+        "SETUP_COMPLETE=true\nDETECTORACLE_HOME=~/.detectoracle\nDETECTORACLE_ALLOW_REMOTE_LLM=0\n"
     )
     NUX_ENV_PATH.write_text(content, encoding="utf-8")
 

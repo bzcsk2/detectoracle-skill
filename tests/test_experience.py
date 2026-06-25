@@ -326,7 +326,14 @@ class TestPhase3ExperienceStatus:
                     "trigger_condition": "test",
                     "bad_code_signals": ["test"],
                     "fix": "fix it",
-                    "evidence": [{"repo": "test/repo", "issue": 1, "url": "https://github.com/test/repo/issues/1", "pr_url": ""}],
+                    "evidence": [
+                        {
+                            "repo": "test/repo",
+                            "issue": 1,
+                            "url": "https://github.com/test/repo/issues/1",
+                            "pr_url": "",
+                        }
+                    ],
                     "bug_type": "test_bug",
                     "language": "Python",
                     "frameworks": [],
@@ -357,24 +364,54 @@ class TestPhase3ExperienceStatus:
 
     def test_review_rejects_missing_experience_path(self, tmp_path: Path, monkeypatch):
         import subprocess, sys
+
         result = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve().parent.parent / "skills" / "issueoracle" / "scripts" / "issueoracle.py"),
-             "review", str(tmp_path), "--experience", str(tmp_path / "nonexistent.json")],
-            capture_output=True, text=True, timeout=15,
+            [
+                sys.executable,
+                str(
+                    Path(__file__).resolve().parent.parent
+                    / "skills"
+                    / "issueoracle"
+                    / "scripts"
+                    / "issueoracle.py"
+                ),
+                "review",
+                str(tmp_path),
+                "--experience",
+                str(tmp_path / "nonexistent.json"),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
         assert result.returncode != 0
 
     def test_review_rejects_empty_experience(self, tmp_path: Path):
         import subprocess, sys
+
         empty_exp = tmp_path / "empty.json"
         empty_exp.write_text('{"experiences": []}', encoding="utf-8")
         proj = tmp_path / "proj"
         proj.mkdir()
         (proj / "dummy.py").write_text("x = 1", encoding="utf-8")
         result = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve().parent.parent / "skills" / "issueoracle" / "scripts" / "issueoracle.py"),
-             "review", str(proj), "--experience", str(empty_exp)],
-            capture_output=True, text=True, timeout=15,
+            [
+                sys.executable,
+                str(
+                    Path(__file__).resolve().parent.parent
+                    / "skills"
+                    / "issueoracle"
+                    / "scripts"
+                    / "issueoracle.py"
+                ),
+                "review",
+                str(proj),
+                "--experience",
+                str(empty_exp),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=15,
         )
         assert result.returncode != 0
 
@@ -386,7 +423,14 @@ class TestPhase3ExperienceStatus:
                     "title": "Approved",
                     "root_cause": "test",
                     "bad_code_signals": ["test"],
-                    "evidence": [{"repo": "test/repo", "issue": 1, "url": "https://github.com/test/repo/issues/1", "pr_url": ""}],
+                    "evidence": [
+                        {
+                            "repo": "test/repo",
+                            "issue": 1,
+                            "url": "https://github.com/test/repo/issues/1",
+                            "pr_url": "",
+                        }
+                    ],
                     "status": "approved",
                 },
                 {
@@ -394,7 +438,14 @@ class TestPhase3ExperienceStatus:
                     "title": "Candidate",
                     "root_cause": "test",
                     "bad_code_signals": ["test"],
-                    "evidence": [{"repo": "test/repo", "issue": 2, "url": "https://github.com/test/repo/issues/2", "pr_url": ""}],
+                    "evidence": [
+                        {
+                            "repo": "test/repo",
+                            "issue": 2,
+                            "url": "https://github.com/test/repo/issues/2",
+                            "pr_url": "",
+                        }
+                    ],
                     "status": "candidate",
                 },
             ]
@@ -413,7 +464,14 @@ class TestPhase3ExperienceStatus:
                     "title": "Only Candidate",
                     "root_cause": "test",
                     "bad_code_signals": ["test"],
-                    "evidence": [{"repo": "test/repo", "issue": 3, "url": "https://github.com/test/repo/issues/3", "pr_url": ""}],
+                    "evidence": [
+                        {
+                            "repo": "test/repo",
+                            "issue": 3,
+                            "url": "https://github.com/test/repo/issues/3",
+                            "pr_url": "",
+                        }
+                    ],
                     "status": "candidate",
                 },
             ]

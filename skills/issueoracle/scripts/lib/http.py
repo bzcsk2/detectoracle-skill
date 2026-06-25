@@ -104,12 +104,12 @@ def get_json(
                 if retry_after:
                     delay = retry_after
                 else:
-                    delay = _BASE_DELAY * (2 ** attempt)
+                    delay = _BASE_DELAY * (2**attempt)
                 if attempt < _MAX_RETRIES - 1:
                     time.sleep(min(delay, 60))
                     continue
             elif e.code >= 500 and attempt < _MAX_RETRIES - 1:
-                time.sleep(_BASE_DELAY * (2 ** attempt))
+                time.sleep(_BASE_DELAY * (2**attempt))
                 continue
             break
 

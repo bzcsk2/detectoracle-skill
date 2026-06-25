@@ -48,7 +48,9 @@ class PatternMatchTests(unittest.TestCase):
         self.assertFalse(result)
 
     def test_match_signals_hit(self):
-        hits, suppressed, bonus = pattern_match._match_signals(self.pattern.bad_code_signals, self.chunk)
+        hits, suppressed, bonus = pattern_match._match_signals(
+            self.pattern.bad_code_signals, self.chunk
+        )
         self.assertIn("session", hits)
         self.assertIn("query(", hits)
 
@@ -95,7 +97,11 @@ class PatternMatchTests(unittest.TestCase):
 
     def test_typed_signal_required(self):
         chunk = schema.CodeChunk(
-            file="x.py", start_line=1, end_line=3, symbol="x", language="Python",
+            file="x.py",
+            start_line=1,
+            end_line=3,
+            symbol="x",
+            language="Python",
             code_excerpt="allow_credentials = True",
         )
         typed = schema.TypedSignal(kind="required", value="allow_credentials")
@@ -105,16 +111,26 @@ class PatternMatchTests(unittest.TestCase):
 
     def test_typed_signal_required_any(self):
         chunk = schema.CodeChunk(
-            file="x.py", start_line=1, end_line=3, symbol="x", language="Python",
+            file="x.py",
+            start_line=1,
+            end_line=3,
+            symbol="x",
+            language="Python",
             code_excerpt="allow_origins=['*']",
         )
-        typed = schema.TypedSignal(kind="required_any", values=["allow_origins=['*']", 'allow_origins=["*"]'])
+        typed = schema.TypedSignal(
+            kind="required_any", values=["allow_origins=['*']", 'allow_origins=["*"]']
+        )
         hits, suppressed, bonus = pattern_match._match_signals([typed], chunk)
         self.assertEqual(len(hits), 1)
 
     def test_typed_signal_suppress_if_present(self):
         chunk = schema.CodeChunk(
-            file="x.py", start_line=1, end_line=3, symbol="x", language="Python",
+            file="x.py",
+            start_line=1,
+            end_line=3,
+            symbol="x",
+            language="Python",
             code_excerpt="allow_origins=['*']; allow_credentials=False",
         )
         req = schema.TypedSignal(kind="required", value="allow_origins")
@@ -125,7 +141,11 @@ class PatternMatchTests(unittest.TestCase):
 
     def test_typed_signal_negative_lowers_confidence(self):
         chunk = schema.CodeChunk(
-            file="x.py", start_line=1, end_line=3, symbol="x", language="Python",
+            file="x.py",
+            start_line=1,
+            end_line=3,
+            symbol="x",
+            language="Python",
             code_excerpt="allow_origins=['*']; allow_credentials=False",
         )
         req = schema.TypedSignal(kind="required", value="allow_origins")
@@ -137,7 +157,11 @@ class PatternMatchTests(unittest.TestCase):
 
     def test_typed_signal_optional_bonus(self):
         chunk = schema.CodeChunk(
-            file="x.py", start_line=1, end_line=3, symbol="x", language="Python",
+            file="x.py",
+            start_line=1,
+            end_line=3,
+            symbol="x",
+            language="Python",
             code_excerpt="import typing",
         )
         opt = schema.TypedSignal(kind="optional", value="typing")

@@ -63,8 +63,14 @@ def build_parser():
     p_review.add_argument("--max-findings", type=int, default=20)
     p_review.add_argument("--emit", default="markdown", choices=["markdown", "json", "compact"])
     p_review.add_argument("--save-dir", default=None)
-    p_review.add_argument("--include-candidates", action="store_true", help="Include candidate-status experience patterns")
-    p_review.add_argument("--trust-candidates", action="store_true", help="Allow candidate findings at any severity")
+    p_review.add_argument(
+        "--include-candidates",
+        action="store_true",
+        help="Include candidate-status experience patterns",
+    )
+    p_review.add_argument(
+        "--trust-candidates", action="store_true", help="Allow candidate findings at any severity"
+    )
     p_review.add_argument("--debug", action="store_true")
 
     p_mine = sub.add_parser("mine", help="Mine bug patterns from GitHub repos (comma-separated)")
@@ -80,7 +86,9 @@ def build_parser():
     p_mine.add_argument("--save-dir", default=None)
     p_mine.add_argument("--debug", action="store_true")
     p_mine.add_argument("--resume", action="store_true", help="Resume last interrupted mine run")
-    p_mine.add_argument("--offline-cache", action="store_true", help="Use cached results only, no network")
+    p_mine.add_argument(
+        "--offline-cache", action="store_true", help="Use cached results only, no network"
+    )
     p_mine.add_argument("--cache-ttl", default="7d", help="Cache TTL (e.g. 7d, 24h)")
 
     p_validate = sub.add_parser("validate", help="Validate a pattern pack directory")
@@ -90,7 +98,11 @@ def build_parser():
     p_experience = sub.add_parser("experience", help="Manage bug experiences")
     p_exp_sub = p_experience.add_subparsers(dest="experience_command", required=True)
     p_exp_list = p_exp_sub.add_parser("list", help="List experiences by status")
-    p_exp_list.add_argument("--status", default="candidate", choices=["candidate", "reviewed", "approved", "rejected", "all"])
+    p_exp_list.add_argument(
+        "--status",
+        default="candidate",
+        choices=["candidate", "reviewed", "approved", "rejected", "all"],
+    )
     p_exp_list.add_argument("--emit", default="text", choices=["text", "json"])
 
     p_exp_show = p_exp_sub.add_parser("show", help="Show a single experience")
@@ -104,7 +116,9 @@ def build_parser():
     p_exp_reject.add_argument("id")
     p_exp_reject.add_argument("--review-notes", default="Rejected via CLI")
 
-    p_exp_export = p_exp_sub.add_parser("export-approved", help="Export approved experiences as review-ready patterns")
+    p_exp_export = p_exp_sub.add_parser(
+        "export-approved", help="Export approved experiences as review-ready patterns"
+    )
     p_exp_export.add_argument("--emit", default="text", choices=["text", "json"])
 
     sub.add_parser("diagnose", help="Print environment and pack status")
@@ -149,9 +163,16 @@ def cmd_doctor() -> int:
 
     python_ver = sys.version_info
     if python_ver >= (3, 12):
-        checks.append({"ok": True, "message": f"Python {python_ver.major}.{python_ver.minor}.{python_ver.micro}"})
+        checks.append(
+            {
+                "ok": True,
+                "message": f"Python {python_ver.major}.{python_ver.minor}.{python_ver.micro}",
+            }
+        )
     else:
-        checks.append({"ok": False, "message": f"Python {python_ver.major}.{python_ver.minor} < 3.12"})
+        checks.append(
+            {"ok": False, "message": f"Python {python_ver.major}.{python_ver.minor} < 3.12"}
+        )
         ok = False
 
     skill_dir = SCRIPT_DIR.parent
@@ -164,29 +185,38 @@ def cmd_doctor() -> int:
     packs_dir = skill_dir / "packs"
     patterns, errors = pack_loader.load_pack_dir(packs_dir)
     if errors:
-        checks.append({"ok": False, "message": f"Packs: {len(patterns)} patterns, {len(errors)} errors"})
+        checks.append(
+            {"ok": False, "message": f"Packs: {len(patterns)} patterns, {len(errors)} errors"}
+        )
         ok = False
     else:
         checks.append({"ok": True, "message": f"Packs: {len(patterns)} patterns"})
 
     fixtures_dir = skill_dir / "evals" / "fixtures"
-    fixture_count = len([d for d in fixtures_dir.iterdir() if d.is_dir()]) if fixtures_dir.exists() else 0
+    fixture_count = (
+        len([d for d in fixtures_dir.iterdir() if d.is_dir()]) if fixtures_dir.exists() else 0
+    )
     checks.append({"ok": True, "message": f"Eval fixtures: {fixture_count}"})
 
     git_available = False
     try:
         import subprocess
+
         subprocess.run(["git", "--version"], capture_output=True, timeout=5)
         git_available = True
     except Exception:
         pass
-    checks.append({"ok": git_available, "message": "Git: available" if git_available else "Git: not found"})
+    checks.append(
+        {"ok": git_available, "message": "Git: available" if git_available else "Git: not found"}
+    )
 
     github_token = env.get_config().get("GITHUB_TOKEN")
     if github_token:
         checks.append({"ok": True, "message": "GitHub token: configured"})
     else:
-        checks.append({"ok": True, "message": "GitHub token: missing, public rate limit only (60 req/hr)"})
+        checks.append(
+            {"ok": True, "message": "GitHub token: missing, public rate limit only (60 req/hr)"}
+        )
 
     home = env.get_issueoracle_home()
     checks.append({"ok": True, "message": f"ISSUEORACLE_HOME: {home}"})
@@ -297,7 +327,9 @@ def cmd_review(args) -> int:
         exp_path = Path(args.experience).resolve()
         if exp_path.exists():
             include_candidates = getattr(args, "include_candidates", False)
-            exp_patterns, exp_warnings = experience_mod.load_as_patterns(str(exp_path), include_candidates=include_candidates)
+            exp_patterns, exp_warnings = experience_mod.load_as_patterns(
+                str(exp_path), include_candidates=include_candidates
+            )
             for w in exp_warnings:
                 logger.warning(f"Experience: {w}")
             logger.info(f"Loaded {len(exp_patterns)} patterns from experience: {exp_path}")
@@ -409,6 +441,7 @@ def _count_by_severity(findings):
 
 def cmd_experience(args) -> int:
     from lib import store
+
     home = store.ensure_home()
     exp_path = home / "bugplay" / "experience.json"
 
@@ -449,6 +482,7 @@ def cmd_experience(args) -> int:
 
     if cmd in ("approve", "reject"):
         import datetime
+
         exp_id = args.id
         new_status = "approved" if cmd == "approve" else "rejected"
         found = False
@@ -508,7 +542,9 @@ def cmd_mine(args) -> int:
         run_dir = last_run
         progress = store.load_run(run_dir)
         completed_issues_set = set(progress.get("completed_issues", []))
-        logger.info(f"Resuming run {progress['run_id']} ({len(completed_issues_set)} issues already done)")
+        logger.info(
+            f"Resuming run {progress['run_id']} ({len(completed_issues_set)} issues already done)"
+        )
     else:
         run_dir = store.create_run(repos)
 
@@ -542,7 +578,9 @@ def cmd_mine(args) -> int:
             except Exception as e:
                 logger.warning(f"Failed to process {issue_key}: {e}")
                 if run_dir:
-                    store.append_run_line(run_dir, "errors.jsonl", json.dumps({"issue": issue_key, "error": str(e)}))
+                    store.append_run_line(
+                        run_dir, "errors.jsonl", json.dumps({"issue": issue_key, "error": str(e)})
+                    )
 
     if run_dir:
         progress = store.load_run(run_dir)

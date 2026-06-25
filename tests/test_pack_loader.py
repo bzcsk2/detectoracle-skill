@@ -95,13 +95,28 @@ class PackLoaderTests(unittest.TestCase):
     def test_duplicate_pattern_id_fails_review_load(self):
         import subprocess, sys
         from pathlib import Path
+
         packs_dir = Path(__file__).resolve().parent.parent / "skills" / "issueoracle" / "packs"
         result = subprocess.run(
-            [sys.executable, str(Path(__file__).resolve().parent.parent / "skills" / "issueoracle" / "scripts" / "issueoracle.py"),
-             "validate", str(packs_dir)],
-            capture_output=True, text=True, timeout=30,
+            [
+                sys.executable,
+                str(
+                    Path(__file__).resolve().parent.parent
+                    / "skills"
+                    / "issueoracle"
+                    / "scripts"
+                    / "issueoracle.py"
+                ),
+                "validate",
+                str(packs_dir),
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
         )
-        self.assertEqual(result.returncode, 0, msg=f"validate exited {result.returncode}:\n{result.stderr}")
+        self.assertEqual(
+            result.returncode, 0, msg=f"validate exited {result.returncode}:\n{result.stderr}"
+        )
 
     def test_load_valid_pattern(self):
         yaml_content = """
