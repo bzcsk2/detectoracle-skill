@@ -48,15 +48,17 @@ def load_pack_dir(
             try:
                 pattern = schema.Pattern(**entry)
                 if pid in seen_ids:
-                    errors.append({
-                        "file": str(yf),
-                        "id": pid,
-                        "errors": [
-                            f"Duplicate pattern id: {pid}",
-                            f"  first: {seen_ids[pid]}",
-                            f"  duplicate: {yf}",
-                        ],
-                    })
+                    errors.append(
+                        {
+                            "file": str(yf),
+                            "id": pid,
+                            "errors": [
+                                f"Duplicate pattern id: {pid}",
+                                f"  first: {seen_ids[pid]}",
+                                f"  duplicate: {yf}",
+                            ],
+                        }
+                    )
                     continue
                 seen_ids[pid] = str(yf)
                 patterns.append(pattern)

@@ -42,7 +42,9 @@ def find_linked_prs(owner_repo: str, issue_number: int, token: str | None = None
 
 def fetch_pr(owner_repo: str, pr_number: int, token: str | None = None) -> schema.LinkedPR | None:
     try:
-        data, _ = http.get_json(f"/repos/{owner_repo}/pulls/{pr_number}", token=token, use_cache=True)
+        data, _ = http.get_json(
+            f"/repos/{owner_repo}/pulls/{pr_number}", token=token, use_cache=True
+        )
     except Exception:
         return None
     return schema.LinkedPR(

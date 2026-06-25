@@ -74,14 +74,16 @@ def search_similar_repos(
     if len(topics) > 1:
         queries.append((f"language:{language} topic:{topics[1]} stars:>50", 50))
 
-    framework_keywords = [t for t in topics if t in ("fastapi", "flask", "django", "express", "react", "vue")]
+    framework_keywords = [
+        t for t in topics if t in ("fastapi", "flask", "django", "express", "react", "vue")
+    ]
     if framework_keywords:
         kw = framework_keywords[0]
         queries.append((f"language:{language} {kw} stars:>50", 50))
 
     queries.append((f"language:{language} stars:>20 pushed:>2025-01-01", 20))
 
-    for q, min_stars in queries:
+    for q, _min_stars in queries:
         data = _request(
             "/search/repositories",
             token,
@@ -108,15 +110,20 @@ def search_similar_repos(
 
     max_stars = max((c.stars for c in candidates), default=1)
     import datetime
+
     now = datetime.datetime.now().timestamp()
     for c in candidates:
         topic_overlap = len(c.matched_topics) / max(len(topics), 1)
-        framework_overlap = 1.0 if any(t in (c.matched_topics or []) for t in framework_keywords) else 0.0
+        framework_overlap = (
+            1.0 if any(t in (c.matched_topics or []) for t in framework_keywords) else 0.0
+        )
         stars_score = min(c.stars / max_stars, 1.0)
         recent_score = 0.0
         if c.last_pushed_at:
             try:
-                pushed = datetime.datetime.fromisoformat(c.last_pushed_at.replace("Z", "+00:00")).timestamp()
+                pushed = datetime.datetime.fromisoformat(
+                    c.last_pushed_at.replace("Z", "+00:00")
+                ).timestamp()
                 days_since = (now - pushed) / 86400
                 recent_score = max(0.0, 1.0 - days_since / 365)
             except Exception:

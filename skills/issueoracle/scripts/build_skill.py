@@ -6,7 +6,7 @@ from pathlib import Path
 SKILL_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = SKILL_DIR.parents[1]
 DIST_DIR = REPO_ROOT / "dist"
-OUT_PATH = DIST_DIR / "issueoracle.skill"
+OUT_PATH = DIST_DIR / "detectoracle.skill"
 
 EXCLUDED_PARTS = {
     ".git",
@@ -21,6 +21,7 @@ EXCLUDED_PARTS = {
 EXCLUDED_SUFFIXES = {".pyc", ".pyo"}
 REQUIRED_ENTRIES = {
     "SKILL.md",
+    "scripts/detectoracle.py",
     "scripts/issueoracle.py",
     "scripts/lib/schema.py",
     "scripts/lib/version.py",

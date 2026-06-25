@@ -10,9 +10,10 @@ def verify():
     scripts_dir = Path(__file__).parent
     skill_dir = scripts_dir.parent
 
-    # Check critical files exist
+    # Check critical files exist. The main script keeps its legacy file name during the rename.
     critical = [
         skill_dir / "SKILL.md",
+        scripts_dir / "detectoracle.py",
         scripts_dir / "issueoracle.py",
         scripts_dir / "build_skill.py",
         scripts_dir / "lib" / "version.py",
@@ -59,12 +60,12 @@ def verify():
         errors.append("packs/ directory missing")
 
     if errors:
-        print("VERIFY FAILED:")
+        print("DETECTORACLE VERIFY FAILED:")
         for e in errors:
             print(f"  - {e}")
         return 1
     else:
-        print("VERIFY PASSED")
+        print("DETECTORACLE VERIFY PASSED")
         return 0
 
 
