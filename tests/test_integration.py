@@ -14,7 +14,7 @@ class IntegrationTests(unittest.TestCase):
             / "skills"
             / "detectoracle"
             / "scripts"
-            / "issueoracle.py"
+            / "detectoracle.py"
         )
         cls.packs = Path(__file__).resolve().parent.parent / "skills" / "detectoracle" / "packs"
         cls.python = sys.executable
