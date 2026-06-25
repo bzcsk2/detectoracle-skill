@@ -4,9 +4,6 @@ on:
   push:
   pull_request:
 
-permissions:
-  contents: write
-
 jobs:
   test:
     name: test py${{ matrix.python-version }} ${{ matrix.os }}
@@ -20,8 +17,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref || github.ref_name }}
 
       - uses: astral-sh/setup-uv@v5
 
@@ -30,97 +25,6 @@ jobs:
 
       - name: Sync dependencies
         run: uv sync --all-groups
-
-      - name: Apply DetectorOracle alignment fixes once
-        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest' && (github.ref_name == 'codex/align-experience-paths' || github.head_ref == 'codex/align-experience-paths')
-        run: |
-          set -euxo pipefail
-          python - <<'PY'
-          from pathlib import Path
-
-          path = Path("skills/detectoracle/scripts/issueoracle.py")
-          text = path.read_text(encoding="utf-8")
-          replacements = {
-              "home = env.get_issueoracle_home()\n    checks.append({\"ok\": True, \"message\": f\"ISSUEORACLE_HOME: {home}\"})": "home = env.get_detectoracle_home()\n    checks.append({\"ok\": True, \"message\": f\"DETECTORACLE_HOME: {home}\"})",
-              '"suggested": "/issueoracle scan ."': '"suggested": "/detectoracle scan ."',
-              'home = store.ensure_home()\n    exp_path = home / "bugplay" / "experience.json"\n\n    if not exp_path.exists():\n        print("No experience data found. Run `issueoracle mine` first.", file=sys.stderr)\n        return 1': 'exp_path = store.resolve_experience_json_path()\n\n    if exp_path is None:\n        print("No experience data found. Run `detectoracle mine` first.", file=sys.stderr)\n        return 1',
-              'logger.info(f"Run `issueoracle review <repo> --experience {bugplay_dir / \'bug-experience.md\'}`")': 'logger.info(f"Run `detectoracle review <repo> --experience {bugplay_dir / \'experience.json\'}`")',
-              'os.environ["ISSUEORACLE_DEBUG"] = "1"': 'os.environ["DETECTORACLE_DEBUG"] = "1"',
-              'if os.environ.get("ISSUEORACLE_DEBUG"):': 'if os.environ.get("DETECTORACLE_DEBUG") or os.environ.get("ISSUEORACLE_DEBUG"):',
-          }
-          for old, new in replacements.items():
-              if old not in text:
-                  raise SystemExit(f"replacement target not found: {old[:80]!r}")
-              text = text.replace(old, new)
-          path.write_text(text, encoding="utf-8")
-
-          path = Path("skills/detectoracle/evals/run_eval.py")
-          text = path.read_text(encoding="utf-8")
-          text = text.replace('"""Eval runner for IssueOracle pattern fixtures."""', '"""Eval runner for DetectorOracle pattern fixtures."""')
-          text = text.replace('description="Run IssueOracle eval suite"', 'description="Run DetectorOracle eval suite"')
-          path.write_text(text, encoding="utf-8")
-
-          path = Path("CONTRIBUTING.md")
-          text = path.read_text(encoding="utf-8")
-          text = text.replace(
-              "The public name is DetectorOracle, but some internal paths still contain `issueoracle` during the migration window. Do not rename directories piecemeal. A full path migration should happen in one dedicated PR with compatibility tests and release notes.",
-              "The public name, repository paths, and skill directory now use DetectorOracle. The `issueoracle.py` module and `ISSUEORACLE_*` environment variables remain as compatibility aliases for migrated users; new docs and examples should prefer `detectoracle.py` and `DETECTORACLE_*`.",
-          )
-          path.write_text(text, encoding="utf-8")
-
-          path = Path("docs/RENAME_MIGRATION.md")
-          text = '''# DetectorOracle Rename Migration
-
-This project was renamed from **IssueOracle** to **DetectorOracle**.
-
-## Public contract
-
-The public project identity is now:
-
-- Repository: `bzcsk2/detectoracle-skill`
-- Skill name: `detectoracle`
-- User-facing invocation: `/detectoracle ...`
-- Built artifact: `dist/detectoracle.skill`
-- Skill directory: `skills/detectoracle`
-- Preferred user data directory: `~/.detectoracle`
-- Preferred configuration directory: `~/.config/detectoracle`
-- Preferred environment variables: `DETECTORACLE_*`
-
-## Compatibility contract
-
-The following legacy names are intentionally still accepted during the migration window:
-
-- Python compatibility module: `skills/detectoracle/scripts/issueoracle.py`
-- Legacy user data directory: `~/.issueoracle`
-- Legacy configuration directory: `~/.config/issueoracle`
-- Legacy environment variables: `ISSUEORACLE_*`
-- Legacy mined experience path: `~/.detectoracle/bugplay/candidates/experience.json`
-
-This avoids breaking existing local installs or losing previously mined bug-experience data.
-
-## Migration policy
-
-1. New docs, CLI examples, marketplace-facing metadata, and generated artifacts should use DetectorOracle.
-2. Existing users should not be forced to move data manually.
-3. Compatibility aliases may stay until a future major-version cleanup.
-4. Any future removal of `issueoracle.py` or `ISSUEORACLE_*` must include explicit release notes and migration tests.
-
-## Current known limitation
-
-The canonical shell/script entrypoint is `detectoracle.py`, but the core implementation module is still named `issueoracle.py` for compatibility. This is acceptable for the 0.4.x migration window; future cleanup should move the CLI implementation into a neutral module such as `lib.cli`.
-'''
-          path.write_text(text, encoding="utf-8")
-          PY
-
-          git restore -- .github/workflows
-          uv run ruff format skills/detectoracle/scripts/issueoracle.py skills/detectoracle/evals/run_eval.py
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add skills/detectoracle/scripts/issueoracle.py skills/detectoracle/evals/run_eval.py CONTRIBUTING.md docs/RENAME_MIGRATION.md
-          if ! git diff --cached --quiet; then
-            git commit -m "fix: align DetectorOracle user-facing names"
-            git push
-          fi
 
       - name: Ruff format check
         run: uv run ruff format --check .
