@@ -22,7 +22,7 @@ REQUIRED_BUNDLE_ENTRIES = {
 }
 
 
-def _run(cmd: list[str], *, cwd: Path) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], *, cwd: Path):
     return subprocess.run(
         cmd,
         cwd=cwd,
@@ -32,7 +32,7 @@ def _run(cmd: list[str], *, cwd: Path) -> subprocess.CompletedProcess:
     )
 
 
-def _summarize_failure(result: subprocess.CompletedProcess) -> str:
+def _summarize_failure(result) -> str:
     stdout = result.stdout.strip()
     stderr = result.stderr.strip()
     detail = stderr or stdout or "no output"
@@ -83,7 +83,7 @@ def _verify_bundle_archive(bundle_path: Path) -> list[str]:
     return errors
 
 
-def verify():
+def verify() -> int:
     errors = []
 
     scripts_dir = Path(__file__).parent
@@ -124,17 +124,16 @@ def verify():
         )
         d = p.model_dump()
         p2 = schema.Pattern(**d)
-        assert p.id == p2.id
+        if p.id != p2.id:
+            errors.append("Schema round-trip changed pattern id")
     except Exception as e:
         errors.append(f"Schema round-trip failed: {e}")
 
     packs_dir = skill_dir / "packs"
-    if packs_dir.exists():
-        patterns_found = list(packs_dir.rglob("patterns.yaml"))
-        if not patterns_found:
-            errors.append("No pattern packs found")
-    else:
+    if not packs_dir.exists():
         errors.append("packs/ directory missing")
+    elif not list(packs_dir.rglob("patterns.yaml")):
+        errors.append("No pattern packs found")
 
     errors.extend(_verify_bundle_archive(bundle_path))
 
