@@ -1,6 +1,6 @@
 # Review Report Format
 
-IssueOracle outputs findings grouped by severity. Each finding includes:
+DetectorOracle outputs findings grouped by severity. Each finding includes:
 
 ## Per-finding Fields
 
@@ -15,8 +15,8 @@ IssueOracle outputs findings grouped by severity. Each finding includes:
 | `title` | Finding title | ✅ |
 | `matched_pattern` | Pattern ID that matched | ✅ |
 | `trigger_condition` | What triggered the match | ✅ |
-| `local_evidence` | List of {line, description} | ✅ |
-| `oss_evidence` | List of {repo, issue, pr, commit, url, strength} | If pattern from OSS |
+| `local_evidence` | List of `{line, description}` | ✅ |
+| `oss_evidence` | List of `{repo, issue, pr, commit, url, strength}` | If pattern from OSS |
 | `suggested_fix` | Recommended fix description | ✅ |
 | `validation` | How to validate the fix | ✅ |
 | `false_positive_boundary` | When this finding may be wrong | ✅ |
