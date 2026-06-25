@@ -45,7 +45,7 @@ jobs:
             python - <<'PY'
           from pathlib import Path
 
-          skip_dirs = {".git", ".venv", "dist", "__pycache__", ".pytest_cache", ".ruff_cache"}
+          skip_dirs = {".git", ".github/workflows", ".venv", "dist", "__pycache__", ".pytest_cache", ".ruff_cache"}
           replacements = {
               "skills/issueoracle": "skills/detectoracle",
               "skills\\issueoracle": "skills\\detectoracle",
@@ -67,8 +67,9 @@ jobs:
                   path.write_text(new_text, encoding="utf-8")
           PY
 
-            rm -f .github/workflows/migrate-detectoracle-path.yml
             uv run ruff format . || true
+            git restore -- .github/workflows
+            rm -f migration-output.txt
 
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
