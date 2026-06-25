@@ -1,4 +1,4 @@
-"""Eval runner for IssueOracle pattern fixtures."""
+"""Eval runner for DetectorOracle pattern fixtures."""
 
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ def run_eval(fixtures_dir: Path, golden_dir: Path, packs_dir: Path, emit: str = 
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run IssueOracle eval suite")
+    parser = argparse.ArgumentParser(description="Run DetectorOracle eval suite")
     skill_dir = Path(__file__).resolve().parent.parent
     parser.add_argument("--fixtures", default=str(skill_dir / "evals" / "fixtures"))
     parser.add_argument("--golden", default=str(skill_dir / "evals" / "golden"))

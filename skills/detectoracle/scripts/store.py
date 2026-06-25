@@ -18,14 +18,37 @@ def ensure_home() -> Path:
     return home
 
 
+def bugplay_dir() -> Path:
+    return ensure_home() / "bugplay"
+
+
+def experience_json_path() -> Path:
+    return bugplay_dir() / "experience.json"
+
+
+def bug_experience_markdown_path() -> Path:
+    return bugplay_dir() / "bug-experience.md"
+
+
+def legacy_candidate_experience_json_path() -> Path:
+    return bugplay_dir() / "candidates" / "experience.json"
+
+
+def resolve_experience_json_path() -> Path | None:
+    primary = experience_json_path()
+    if primary.exists():
+        return primary
+    legacy = legacy_candidate_experience_json_path()
+    if legacy.exists():
+        return legacy
+    return None
+
+
 def save_experience(md: str, json_data: str) -> Path:
-    home = ensure_home()
-    bugplay = home / "bugplay"
-    candidates_dir = bugplay / "candidates"
-    candidates_dir.mkdir(parents=True, exist_ok=True)
-    (candidates_dir / "bug-experience.md").write_text(md, encoding="utf-8")
-    (candidates_dir / "experience.json").write_text(json_data, encoding="utf-8")
-    return candidates_dir
+    bugplay = bugplay_dir()
+    (bugplay / "bug-experience.md").write_text(md, encoding="utf-8")
+    (bugplay / "experience.json").write_text(json_data, encoding="utf-8")
+    return bugplay
 
 
 def save_report(report_md: str, report_json: str, repo_slug: str) -> tuple[Path, Path]:
